@@ -3,6 +3,7 @@ import telebot
 
 
 
+
 text_about = '''
 Что-то очень инетересное по Python
 Сcылки на что-то
@@ -42,6 +43,16 @@ class Keyboard:
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_start,
                               reply_markup=markup)
+    def display_main(self, message):
+        markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        markup.row('Записаться на процедуру')
+        markup.row('Записаться к мастеру')
+        markup.row('Посмотреть услуги и цены')
+        markup.row('Посмотреть акции')
+        text_mess="Чем помочь?"
+        self.bot.send_message(chat_id=message.from_user.id,
+                              text=text_mess,
+                              reply_markup=markup)
     def display_services(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         markup.row('Записаться на процедуру')
@@ -64,7 +75,8 @@ class Keyboard:
         markup.row('на маникюр')
         markup.row('на педикюр')
         markup.row('на наращивание ресниц')
-        markup.row('эпиляцию')
+        markup.row('на эпиляцию')
+        markup.row('Вернуться на главную')
         text_procedures='Отлично! На какую процедуду хотите записаться?'
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_procedures,
@@ -74,6 +86,8 @@ class Keyboard:
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         markup.row('Да')
         markup.row('Нет')
+        markup.row('Выбрать процедуру')
+        markup.row('Вернуться на главную')
         text_master='Хотите записаться к определенному мастеру?'
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_master,
@@ -82,7 +96,22 @@ class Keyboard:
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         for master in list_of_masters:
             markup.row(master)
+        markup.row('Выбрать процедуру')
+        markup.row('Вернуться на главную')
         text_choose='Выберете мастера:'
+        self.bot.send_message(chat_id=message.from_user.id,
+                              text=text_choose,
+                              reply_markup=markup)
+
+    def display_of_all_masters(self, message, list_of_masters):
+        markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        for master in list_of_masters:
+            markup.row(master)
+        markup.row('Вернуться на главную')
+        text_choose='Выберете мастера:\n'
+        for i, master in enumerate(list_of_masters):
+            text_choose+='{}. Мастер {}, рейтинг: {}\n'.format(i+1, master, 5)
+
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_choose,
                               reply_markup=markup)
@@ -95,4 +124,11 @@ class Keyboard:
         text_choose='Вы записаны на процедуру {} на {}. Ждем Вас!'.format(procedure, date)
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_choose,
+                              reply_markup=markup)
+    def display_vote(self, id, master):
+        markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        markup.row('★','★★','★★★','★★★★','★★★★★')
+        text_vote= 'Спасибо, что посетили Наш салон! Пожалуйста оцените нашего мастера {}'.format(master)
+        self.bot.send_message(chat_id=id,
+                              text=text_vote,
                               reply_markup=markup)
