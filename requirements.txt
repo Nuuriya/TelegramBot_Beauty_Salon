@@ -1,6 +1,5 @@
 telebot
 schedule
-threading
 time
 keyboard
 telegramcalendar
