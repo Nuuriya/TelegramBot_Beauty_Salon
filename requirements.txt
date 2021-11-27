@@ -1,5 +1,2 @@
 telebot
 schedule
-time
-keyboard
-telegramcalendar
