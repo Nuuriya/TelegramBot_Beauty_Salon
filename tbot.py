@@ -1,7 +1,6 @@
 import telebot
 import schedule
 from threading import Thread
-import asyncio
 from time import sleep
 from keyboard import Keyboard
 import telegramcalendar as tgc
@@ -9,7 +8,7 @@ import telegramcalendar as tgc
 list_of_masters=['Маникюрова', 'Топ маникюрова','Педикюрова','топ Педикюрова','РЕсницева']
 list_of_services = ['на маникюр', 'на педикюр','на наращивание ресниц','на эпиляцию']
 # ваш токен
-TOKEN = '2126834952:AAHnqsA1jtlibXDBVb_MENfJq4YI3PG6Fbs'  # Нурия
+TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
 bot = telebot.TeleBot(TOKEN)
 keyboard = Keyboard(bot)
 deadline_date = tgc.datetime.datetime.now()
@@ -113,15 +112,10 @@ def vote():#напоминание оценить мастера
     master="aaa"
     keyboard.display_vote(id, master)
 
-async def scheduler():
-    schedule.every().day.at("21:10").do(vote)
-    #aioschedule.every(1).hours.do(start_function) каждый час
-    while True:
-        await schedule.run_pending()
-        await asyncio.sleep(1)
+
 if __name__ == "__main__":
     # Create the job in schedule.
-    # schedule.every().day.at("10:30").do(reminder)
+    schedule.every().day.at("10:30").do(reminder)
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second
     # to see if the scheduled job needs to be ran.
