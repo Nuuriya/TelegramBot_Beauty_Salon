@@ -14,7 +14,7 @@ def insertMaster(last, name, serv, istop, rating, count):
     executeQuery(q)
 def insertService(name, priceTop, price, time):
     q = "INSERT INTO service (name, priceTop, price, time) " \
-        "VALUES (\"%s\", %i, %i, \"%s\")" % (name, priceTop, price, time)
+        "VALUES (\"%s\", %i, %i, %i)" % (name, priceTop, price, time)
     print(q)
     executeQuery(q)
 def updateRating(id, ass):
@@ -36,14 +36,14 @@ if __name__ == '__main__':
     # создаем бд
     conn = connect(host='localhost',
                    user='root',
-                   password='root')
+                   password='87654W!')
     cur = conn.cursor()
     query = "CREATE DATABASE IF NOT EXISTS `dbbeautysalon`"
     executeQuery(query)
     #подключаемся к нашей бд
     conn = connect(host='localhost',
                            user='root',
-                           password='root',
+                           password='87654W!',
                            database='dbbeautysalon')
     cur = conn.cursor()
 
@@ -69,11 +69,12 @@ if __name__ == '__main__':
     executeQuery(query)
 
     query = "CREATE TABLE record(" \
-            "id INT AUTO_INCREMENT PRIMARY KEY," \
+            "idUser INT ," \
             "idMaster INT," \
             "idService INT," \
             "idDay INT," \
             "time int," \
+            "CONSTRAINT PK_record PRIMARY KEY (idUser, idMaster,idService,idDay),"\
             "FOREIGN KEY(idMaster) REFERENCES master(id)," \
             "FOREIGN KEY(idService) REFERENCES service(id))"
     executeQuery(query)
@@ -87,7 +88,13 @@ if __name__ == '__main__':
     executeQuery(query)
 
     insertMaster("Растремина", "Анастасия", "маникюр,педикюр", False, 0, 0)
-    insertService("маникюр", 2000, 1000, "3")
+    insertService("маникюр", 2000, 1000, 3)
+    insertService("педикюр", 2500, 1500, 3)
+    insertService("наращивание ресниц", 3500, 2200, 5)
+    insertService("эпиляция", 900, 500, 1)
+    insertMaster("Пупкина", "Васелина", "наращивание ресниц", False, 0, 0)
+    insertMaster("Чушкина", "Маргарита", "маникюр,педикюр", True, 0, 0)
+    insertMaster("Небукина", "Ирина", "эпиляция", False, 0, 0)
 
     # допустим знаем id мастера, обновляем рейтинг и кол-во клиентов
     updateRating(1,5)

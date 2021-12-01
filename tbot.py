@@ -7,8 +7,11 @@ import telegramcalendar as tgc
 
 list_of_masters=['Маникюрова', 'Топ маникюрова','Педикюрова','топ Педикюрова','РЕсницева']
 list_of_services = ['на маникюр', 'на педикюр','на наращивание ресниц','на эпиляцию']
+
+
 # ваш токен
-TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
+#TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
+TOKEN = '2144374054:AAHi3LyZLWOv3cMfHMVhR7pCKKQeaeb7pbo'  # Диляра
 bot = telebot.TeleBot(TOKEN)
 keyboard = Keyboard(bot)
 deadline_date = tgc.datetime.datetime.now()
@@ -38,7 +41,7 @@ def procedures(message):
 
 @bot.message_handler(func=lambda msg: msg.text == 'Записаться к мастеру', content_types=['text'])
 def all_masters(message):
-    keyboard.display_of_all_masters(message,list_of_masters)
+    keyboard.display_of_all_masters(message)
 
 @bot.message_handler(func=lambda msg: msg.text in list_of_services , content_types=['text'])
 def do_you_want_master(message):
@@ -46,7 +49,7 @@ def do_you_want_master(message):
 
 @bot.message_handler(func=lambda msg: msg.text == 'Да', content_types=['text'])
 def do_you_want_master(message):
-    keyboard.display_of_all_masters(message,list_of_masters)
+    keyboard.display_of_all_masters(message)
 
 @bot.message_handler(func=lambda msg: msg.text == 'Нет', content_types=['text'])
 def calendar(message):
@@ -115,6 +118,7 @@ def vote():#напоминание оценить мастера
 
 if __name__ == "__main__":
     # Create the job in schedule.
+
     schedule.every().day.at("10:30").do(reminder)
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second
