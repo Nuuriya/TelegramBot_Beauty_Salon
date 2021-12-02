@@ -4,17 +4,22 @@ from threading import Thread
 from time import sleep
 from keyboard import Keyboard
 import telegramcalendar as tgc
-
+import createDB as db
 list_of_masters=['Маникюрова', 'Топ маникюрова','Педикюрова','топ Педикюрова','РЕсницева']
-list_of_services = ['на маникюр', 'на педикюр','на наращивание ресниц','на эпиляцию']
+
+
 
 
 # ваш токен
-#TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
-TOKEN = '2144374054:AAHi3LyZLWOv3cMfHMVhR7pCKKQeaeb7pbo'  # Диляра
+TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
+# TOKEN = '2144374054:AAHi3LyZLWOv3cMfHMVhR7pCKKQeaeb7pbo'  # Диляра
 bot = telebot.TeleBot(TOKEN)
 keyboard = Keyboard(bot)
 deadline_date = tgc.datetime.datetime.now()
+
+list_of_procedure =  keyboard.list_of_procedures()#список процедур
+global procedure
+procedure=''
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
@@ -43,13 +48,17 @@ def procedures(message):
 def all_masters(message):
     keyboard.display_of_all_masters(message)
 
-@bot.message_handler(func=lambda msg: msg.text in list_of_services , content_types=['text'])
+@bot.message_handler(func=lambda msg: msg.text in list_of_procedure, content_types=['text'])
 def do_you_want_master(message):
+    global procedure
+    procedure = message.text#запомним процедуру на которую хочет записаться
+    print(procedure)
     keyboard.display_do_you_want_master(message)
 
 @bot.message_handler(func=lambda msg: msg.text == 'Да', content_types=['text'])
 def do_you_want_master(message):
-    keyboard.display_of_all_masters(message)
+    print(procedure)
+    keyboard.display_of_masters(message, procedure)
 
 @bot.message_handler(func=lambda msg: msg.text == 'Нет', content_types=['text'])
 def calendar(message):
@@ -69,7 +78,6 @@ def keyboard_input_text(call):
     elif action == "DAY":
         # Выбран день
         # Cкрываем календарь (изменяем сообщение, не посылая markup)
-        # Здесь можем написать выбранную дату и проверку "верно/нет"
         bot.edit_message_text(text=call.message.text,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id)
@@ -80,11 +88,7 @@ def keyboard_input_text(call):
         dd = ret_data.day
         global deadline_date
         deadline_date = ret_data
-        markup = telebot.types.ReplyKeyboardMarkup(True, False)
-        markup.row('Да')
-        markup.row('Нет')
-        bot.send_message(call.message.chat.id, "Вы записались на {}.{}.{}".format(dd, mm, gg),
-                         reply_markup=markup)
+        bot.send_message(call.message.chat.id, "Вы записались на {}.{}.{}".format(dd, mm, gg))
         # Важно запомнить дату
     elif action == "PREV-MONTH":
         pre = curr - tgc.datetime.timedelta(days=1)
@@ -108,24 +112,41 @@ def schedule_checker():
         sleep(1)
 
 def reminder():#напоминание о процедуре
-    bot.send_message(some_id, "Здравствуйте!  Напоминаем, что у вас завтра процедура в 11:00")
+    keyboard.kb_reminder()
 
 def vote():#напоминание оценить мастера
-    id=some_id
-    master="aaa"
-    keyboard.display_vote(id, master)
+    dict_of_answ = keyboard.reminder_to_vote_dict()
+    for id in dict_of_answ.keys():
+        print(id, dict_of_answ[id][0], dict_of_answ[id][1])
+        lastname = dict_of_answ[id][1]
+        name = dict_of_answ[id][2]
+        master = dict_of_answ[id][0]
+        markup=keyboard.vote_keyboard(master)
+        text_vote = 'Спасибо, что посетили Наш салон! Пожалуйста, оцените нашего мастера {} {}'.format(lastname, name)
+        bot.send_message(chat_id=id,
+                              text=text_vote,
+                              reply_markup=markup)
 
+@bot.callback_query_handler(func=lambda call: keyboard.separate_callback_data(call.data)[0] in
+                                              ['1', '2', '3', '4', '5'])
+def update_rating(call):
+    (rate, id) = keyboard.separate_callback_data(call.data)
+    print(rate, id)
+    bot.edit_message_text(text="Спасибо за Ваш голос!",
+                          chat_id=call.message.chat.id,
+                          message_id=call.message.message_id)
+    keyboard.updateRating(int(id), int(rate))
 
 if __name__ == "__main__":
     # Create the job in schedule.
 
-    schedule.every().day.at("10:30").do(reminder)
+    schedule.every().day.at("14:20").do(reminder)
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second
     # to see if the scheduled job needs to be ran.
 
     # scheduler()
-    schedule.every().day.at("21:40").do(vote)
+    schedule.every().day.at("15:26").do(vote)
     Thread(target=schedule_checker).start()
 
     # And then of course, start your server.

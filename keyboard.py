@@ -6,10 +6,15 @@ from pymysql import connect
 import datetime
 
 
-text_about = '''
-Что-то очень инетересное по Python
-Сcылки на что-то
-'''
+conn = connect(host='localhost',
+                           user='root',
+                           password='87654W!',
+                           database='dbbeautysalon')
+# бд нурии
+# conn = connect(host='localhost',
+#                            user='root',
+#                            database='dbbeautysalon')
+cur = conn.cursor()
 
 text_start = '''
 Здравствуйте! Вас приветствует бот
@@ -26,11 +31,9 @@ text_promo = '''
 text_services = '''
 Услуга         Цена(мастер)    Цена(Топ мастер)   Время\n
 '''
-conn = connect(host='localhost',
-                           user='root',
-                           password='87654W!',
-                           database='dbbeautysalon')
-cur = conn.cursor()
+
+
+
 
 def executeQuery(str):
     cur.execute(str)
@@ -52,6 +55,15 @@ def top(a):
 class Keyboard:
     def __init__(self, bot):
         self.bot = bot
+
+    def list_of_procedures(self):
+        list=[]
+        q = "Select name from service"
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+           list.append(row[0])
+        return list
 
     def display_start(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
@@ -122,11 +134,10 @@ class Keyboard:
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_master,
                               reply_markup=markup)
-    def display_of_masters(self, message):
+    def display_of_masters(self, message, procedure):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
-        # я пока сама выбрала процедуру
-        pr ="маникюр"
-        q = "Select * from master where service like %"+pr+"%"
+        pr=procedure
+        q = "Select * from master where service like '%"+pr+"%';"
         executeQuery(q)
         result = cur.fetchall()
         for i in result:
@@ -160,10 +171,57 @@ class Keyboard:
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_choose,
                               reply_markup=markup)
-    def display_vote(self, id, master):
-        markup = telebot.types.ReplyKeyboardMarkup(True, False)
-        markup.row('★','★★','★★★','★★★★','★★★★★')
-        text_vote= 'Спасибо, что посетили Наш салон! Пожалуйста оцените нашего мастера {}'.format(master)
-        self.bot.send_message(chat_id=id,
-                              text=text_vote,
-                              reply_markup=markup)
+
+    def separate_callback_data(self, data):
+        """ Separate the callback data"""
+        return data.split(";")
+    def vote_keyboard(self, master):
+        markup = telebot.types.InlineKeyboardMarkup()
+        btn1 = telebot.types.InlineKeyboardButton('★', callback_data="1;{}".format(master))
+        markup.row(btn1)
+        btn2 = telebot.types.InlineKeyboardButton('★★', callback_data="2;{}".format(master))
+        markup.row(btn2)
+        btn3 = telebot.types.InlineKeyboardButton('★★★', callback_data="3;{}".format(master))
+        markup.row(btn3)
+        btn4 = telebot.types.InlineKeyboardButton('★★★★', callback_data="4;{}".format(master))
+        markup.row(btn4)
+        btn5 = telebot.types.InlineKeyboardButton('★★★★★', callback_data="5;{}".format(master))
+        markup.row(btn5)
+        return markup
+
+    def updateRating(self, id, ass):
+        q = "Select rating, countClient from master " \
+            "WHERE id = %i" %id
+        executeQuery(q)
+        rt = 0
+        count = 0
+        result = cur.fetchall()
+        for row in result:
+            rt = row[0]
+            count = row[1]
+        newRt = (rt * count + ass) / (count + 1)
+        q = "UPDATE master SET rating = %i, countClient = %i " \
+            "WHERE id = %i" % (newRt, count + 1, id)
+        executeQuery(q)
+
+    def reminder_to_vote_dict(self):  # напоминание оценить мастера
+        dict_of_answ={}
+        q = "SELECT idUser, idMaster, lastname, name FROM record join master on(idMaster=id)  WHERE  date = CURRENT_DATE();"
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            dict_of_answ[row[0]]=[row[1],row[2], row[3]]
+        return dict_of_answ
+
+
+    def kb_reminder(self):  # напоминание об услуге
+        dict_of_answ={}
+        q = "SELECT idUser, name, record.time FROM record join service on(idService=id) WHERE DATEDIFF(date, CURRENT_DATE()) = 1;"
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            dict_of_answ[row[0]]=[row[1],row[2]]
+        for id in dict_of_answ.keys():
+            print(id,dict_of_answ[id][0],dict_of_answ[id][1] )
+            self.bot.send_message(chat_id=id,text="Здравствуйте!  Напоминаем, что у вас завтра {} в {}".format(dict_of_answ[id][0],dict_of_answ[id][1]))
+
