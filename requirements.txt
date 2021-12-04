@@ -1,2 +1,12 @@
-telebot
-schedule
+certifi==2021.10.8
+cffi==1.15.0
+charset-normalizer==2.0.8
+cryptography==36.0.0
+idna==3.3
+pycparser==2.21
+PyMySQL==1.0.2
+pyTelegramBotAPI==4.2.0
+requests==2.26.0
+schedule==1.1.0
+telebot==0.0.4
+urllib3==1.26.7

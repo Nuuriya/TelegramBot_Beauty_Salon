@@ -5,7 +5,6 @@ from pymysql import connect
 # from mysql.connector import connect, Error
 import datetime
 
-
 conn = connect(host='localhost',
                            user='root',
                            password='87654W!',
