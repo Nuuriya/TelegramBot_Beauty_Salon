@@ -5,16 +5,17 @@ from pymysql import connect
 # from mysql.connector import connect, Error
 import datetime
 
-conn = connect(host='localhost',
-                           user='root',
-                           password='87654W!',
-                           database='dbbeautysalon')
-# бд нурии
+
 # conn = connect(host='localhost',
 #                            user='root',
+#                            password='87654W!',
 #                            database='dbbeautysalon')
-cur = conn.cursor()
+# бд нурии
+conn = connect(host='localhost',
+                           user='root',
+                           database='dbbeautysalon')
 
+cur = conn.cursor()
 text_start = '''
 Здравствуйте! Вас приветствует бот
 салона красоты "Из уродки в красотку".
@@ -62,6 +63,15 @@ class Keyboard:
         result = cur.fetchall()
         for row in result:
            list.append(row[0])
+        return list
+
+    def list_of_masters(self):
+        list=[]
+        q = "Select * from master"
+        executeQuery(q)
+        result = cur.fetchall()
+        for i in result:
+            list.append('{} {}{}  рейтинг: {}'.format(i[1], i[2], top(i[4]), i[5]))
         return list
 
     def display_start(self, message):
@@ -223,3 +233,4 @@ class Keyboard:
         for id in dict_of_answ.keys():
             print(id,dict_of_answ[id][0],dict_of_answ[id][1] )
             self.bot.send_message(chat_id=id,text="Здравствуйте!  Напоминаем, что у вас завтра {} в {}".format(dict_of_answ[id][0],dict_of_answ[id][1]))
+

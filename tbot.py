@@ -9,8 +9,8 @@ list_of_masters=['Маникюрова', 'Топ маникюрова','Педи
 
 
 # ваш токен
-#TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
-TOKEN = '2144374054:AAHi3LyZLWOv3cMfHMVhR7pCKKQeaeb7pbo'  # Диляра
+TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
+#TOKEN = '2144374054:AAHi3LyZLWOv3cMfHMVhR7pCKKQeaeb7pbo'  # Диляра
 bot = telebot.TeleBot(TOKEN)
 keyboard = Keyboard(bot)
 deadline_date = tgc.datetime.datetime.now()
@@ -18,7 +18,8 @@ deadline_date = tgc.datetime.datetime.now()
 list_of_procedure =  keyboard.list_of_procedures()#список процедур
 global procedure
 procedure=''
-
+global master
+master=''
 @bot.message_handler(commands=['start'])
 def start_message(message):
     print(message.from_user.id)
@@ -38,7 +39,7 @@ def promo(message):
 def services(message):
     keyboard.display_services(message)
 
-@bot.message_handler(func=lambda msg: msg.text == 'Записаться на процедуру', content_types=['text'])
+@bot.message_handler(func=lambda msg: msg.text == 'Записаться на процедуру' or msg.text == 'Выбрать процедуру', content_types=['text'])
 def procedures(message):
     keyboard.display_procedures(message)
 
@@ -58,16 +59,25 @@ def do_you_want_master(message):
     print(procedure)
     keyboard.display_of_masters(message, procedure)
 
-@bot.message_handler(func=lambda msg: msg.text == 'Нет', content_types=['text'])
+@bot.message_handler(func=lambda msg: msg.text == 'Нет' or msg.text in keyboard.list_of_masters(), content_types=['text'])
+#если клиент не хочет мастера пишет "нет", иначе он выбирает мастера из списка мастер будет в keyboard.list_of_masters(),
+#если выбран мастер его нужно будет запомнить
 def calendar(message):
     now = tgc.datetime.datetime.now()  # Текущая дата
     markup = tgc.create_calendar(now.year, now.month)
+    global master
+    master = message.text  # запомним мастера к которому хочет записаться как то должно учавствовать
     bot.send_message(message.from_user.id, "Пожалуйста, выберите дату:",
                      reply_markup=markup)
+
+#как можно сделать: написать запрос на проверку свободного времени, если оно есть, записываем клиента и выводим сообщение что записали
+#иначе не записываем посылаем сообщение чтоб выбрал другой день и снова выводим календарь
+#можно в сообщении до этого написать о свободных датах хз
 
 @bot.callback_query_handler(func=lambda call: tgc.separate_callback_data(call.data)[0] in
                                               ['IGNORE', 'PREV-MONTH', 'NEXT-MONTH', 'DAY'])
 def keyboard_input_text(call):
+    print(master)
     (action, year, month, day) = tgc.separate_callback_data(call.data)
     curr = tgc.datetime.date(int(year), int(month), 1)
     if action == "IGNORE":
@@ -115,7 +125,6 @@ def reminder():#напоминание о процедуре
 def vote():#напоминание оценить мастера
     dict_of_answ = keyboard.reminder_to_vote_dict()
     for id in dict_of_answ.keys():
-        print(id, dict_of_answ[id][0], dict_of_answ[id][1])
         lastname = dict_of_answ[id][1]
         name = dict_of_answ[id][2]
         master = dict_of_answ[id][0]
@@ -144,7 +153,7 @@ if __name__ == "__main__":
     # to see if the scheduled job needs to be ran.
 
     # scheduler()
-    schedule.every().day.at("15:26").do(vote)
+    schedule.every().day.at("15:43").do(vote)
     Thread(target=schedule_checker).start()
 
     # And then of course, start your server.
