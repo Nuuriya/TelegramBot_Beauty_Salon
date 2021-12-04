@@ -5,7 +5,6 @@ from pymysql import connect
 # from mysql.connector import connect, Error
 import datetime
 
-
 conn = connect(host='localhost',
                            user='root',
                            password='87654W!',
@@ -224,4 +223,3 @@ class Keyboard:
         for id in dict_of_answ.keys():
             print(id,dict_of_answ[id][0],dict_of_answ[id][1] )
             self.bot.send_message(chat_id=id,text="Здравствуйте!  Напоминаем, что у вас завтра {} в {}".format(dict_of_answ[id][0],dict_of_answ[id][1]))
-
