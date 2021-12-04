@@ -1,5 +1,6 @@
 import pymysql
 from pymysql import connect
+from datetime import datetime, date, time
 # from mysql.connector import connect, Error
 import datetime
 
@@ -18,8 +19,8 @@ def insertService(name, priceTop, price, time):
     print(q)
     executeQuery(q)
 def insertClient(idUser, idMaster, idService, idDay, time, date):
-    q = "INSERT INTO record (name, priceTop, price, time) " \
-        "VALUES (\"%s\", %i, %i, %i, %i, %i)" % (idUser, idMaster, idService, idDay, time, date)
+    q = "INSERT INTO record (idUser, idMaster, idService, idDay, time, date)" \
+            " VALUES ( %i, %i, %i, %i, %i,  \"%s\")" % (idUser, idMaster, idService, idDay, time,date)
     print(q)
     executeQuery(q)
 
@@ -40,27 +41,27 @@ def updateRating(id, ass):#перенесла функцию в keyboard
 
 if __name__ == '__main__':
     # создаем бд
-    conn = connect(host='localhost',
-                   user='root',
-                   password='87654W!')
+    # conn = connect(host='localhost',
+    #                user='root',
+    #                password='87654W!')
 
     #БД НУРИИ:)
-    # conn = connect(host='localhost',
-    #                user='root')
+    conn = connect(host='localhost',
+                   user='root')
 
     cur = conn.cursor()
     query = "CREATE DATABASE IF NOT EXISTS `dbbeautysalon`"
     executeQuery(query)
     #подключаемся к нашей бд
-    conn = connect(host='localhost',
-                           user='root',
-                           password='87654W!',
-                           database='dbbeautysalon')
+    # conn = connect(host='localhost',
+    #                        user='root',
+    #                        password='87654W!',
+    #                        database='dbbeautysalon')
 
     # БД НУРИИ:)
-    # conn = connect(host='localhost',
-    #                user='root',
-    #                database='dbbeautysalon')
+    conn = connect(host='localhost',
+                   user='root',
+                   database='dbbeautysalon')
 
     cur = conn.cursor()
 
@@ -114,7 +115,7 @@ if __name__ == '__main__':
     insertMaster("Чушкина", "Маргарита", "маникюр,педикюр", True, 0, 0)
     insertMaster("Небукина", "Ирина", "эпиляция", False, 0, 0)
 
-    insertClient(168671681, 1, 1, 1, 1, '2021-12-02 14:25:00')
+    insertClient(168671681, 1, 1, 1, 1, date(2021, 12, 2))
     # допустим знаем id мастера, обновляем рейтинг и кол-во клиентов
     updateRating(1,5)
 
