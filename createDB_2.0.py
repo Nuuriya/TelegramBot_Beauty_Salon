@@ -84,8 +84,8 @@ class workWithDataBase():
                     break
     def updateRating(self,idClient, ass):
         q ="SELECT masterId from record " \
-           "where clientId = {} and dateRecord = \"2021-12-06\"-- CURDATE() " \
-           "group by masterId".format(idClient)                                    # ПОМЕНЯТЬ НА CURDATE()!!!!!!!!
+           "where clientId = {} and dateRecord =  CURDATE() " \
+           "group by masterId".format(idClient)                                    
         self.executeQuery(q)
         result = self.cur.fetchall()
         for row in result:
@@ -238,7 +238,7 @@ if __name__ == '__main__':
     q = "select dayName, workingDay, timeName " \
         "from master m " \
         "left join master_working_day mwd " \
-        "on m.id = mwd.masterId and CURDATE()<=workingDay andworkingDay<=DATE_ADD(CURDATE(), INTERVAL 7 day) " \
+        "on m.id = mwd.masterId and CURDATE()<=workingDay and workingDay<=DATE_ADD(CURDATE(), INTERVAL 7 day) " \
         "left join calendar c on c.dayId = WEEKDAY(workingDay)+1 " \
         "left join (select masterId, dateRecord, timeStart, timeEnd from record " \
         "			where dateRecord >=CURDATE()) r " \
@@ -334,7 +334,7 @@ if __name__ == '__main__':
         "from record r " \
         "left join master m on m.id = r.masterId " \
         "left join service s on s.id = r.serviceId " \
-        "where dateRecord = DATE_ADD(\"2021-12-05\", INTERVAL 1 day)"        # ПОМЕНЯТЬ НА CURDATE()!!!!!!!!
+        "where dateRecord = DATE_ADD(CURDATE(), INTERVAL 1 day)"        
     db.executeQuery(q)
     result = db.cur.fetchall()
     for row in result:
@@ -347,7 +347,7 @@ if __name__ == '__main__':
     # просьба оценить процедуру
     # выбираем id клиента, у к-х была сегодня запись
     q = "select clientId, masterId from record " \
-        "where dateRecord = \"2021-12-06\"-- CURDATE()"                 # ПОМЕНЯТЬ НА CURDATE()!!!!!!!!
+        "where dateRecord = CURDATE()"                
     db.executeQuery(q)
     result = db.cur.fetchall()
     for row in result:
