@@ -238,7 +238,7 @@ if __name__ == '__main__':
     q = "select dayName, workingDay, timeName " \
         "from master m " \
         "left join master_working_day mwd " \
-        "on m.id = mwd.masterId and workingDay<=DATE_ADD(CURDATE(), INTERVAL 7 day) " \
+        "on m.id = mwd.masterId and CURDATE()<=workingDay andworkingDay<=DATE_ADD(CURDATE(), INTERVAL 7 day) " \
         "left join calendar c on c.dayId = WEEKDAY(workingDay)+1 " \
         "left join (select masterId, dateRecord, timeStart, timeEnd from record " \
         "			where dateRecord >=CURDATE()) r " \
@@ -273,7 +273,7 @@ if __name__ == '__main__':
     q = "select m.id, lastName, firstName, dayName, workingDay, timeName " \
         "from master m " \
         "left join master_working_day mwd " \
-        "on m.id = mwd.masterId and workingDay<=DATE_ADD(CURDATE(), INTERVAL 7 day) " \
+        "on m.id = mwd.masterId and CURDATE()<=workingDay and workingDay<=DATE_ADD(CURDATE(), INTERVAL 7 day) " \
         "left join calendar c on c.dayId = WEEKDAY(workingDay)+1 " \
         "left join (select masterId, dateRecord, timeStart, timeEnd from record " \
         "			where dateRecord >=CURDATE()) r " \
