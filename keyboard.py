@@ -18,15 +18,14 @@ conn = connect(host='localhost',
 cur = conn.cursor()
 text_start = '''
 Здравствуйте! Вас приветствует бот
-салона красоты "Из уродки в красотку".
+салона красоты "Красотка".
 Чем могу помочь?
 '''
 text_promo = '''
 Сейчас в нашем салоне действуют следющие акции:\n
 1. Маникюр на каждый 11 палец - БЕСПЛАТНО!\n
-2.\n
-3.\n
-4.\n
+2. Приведи 3 подруги и получи скидку 20% на любую процедуру! \n
+3. Назови секретное слово ТЕЛЕГРАМБОТ и получи скидку 5% на любую процедуру!\n
 '''
 text_services = '''
 Услуга         Цена(мастер)    Цена(Топ мастер)   Время\n
@@ -77,7 +76,7 @@ class Keyboard:
     def display_start(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         markup.row('Записаться на процедуру')
-        markup.row('Записаться к мастеру')
+        # markup.row('Записаться к мастеру')
         markup.row('Посмотреть услуги и цены')
         markup.row('Посмотреть акции')
         self.bot.send_message(chat_id=message.from_user.id,
@@ -86,7 +85,7 @@ class Keyboard:
     def display_main(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         markup.row('Записаться на процедуру')
-        markup.row('Записаться к мастеру')
+        # markup.row('Записаться к мастеру')
         markup.row('Посмотреть услуги и цены')
         markup.row('Посмотреть акции')
         text_mess="Чем помочь?"
@@ -96,7 +95,7 @@ class Keyboard:
     def display_services(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         markup.row('Записаться на процедуру')
-        markup.row('Записаться к мастеру')
+        # markup.row('Записаться к мастеру')
         markup.row('Посмотреть акции')
         #
         q = "Select * from service"
@@ -114,7 +113,7 @@ class Keyboard:
     def display_promo(self, message):
         markup = telebot.types.ReplyKeyboardMarkup(True, False)
         markup.row('Записаться на процедуру')
-        markup.row('Записаться к мастеру')
+        # markup.row('Записаться к мастеру')
         markup.row('Посмотреть услуги и цены')
         self.bot.send_message(chat_id=message.from_user.id,
                               text=text_promo,
