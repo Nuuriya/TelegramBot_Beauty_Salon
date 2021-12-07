@@ -121,7 +121,7 @@ if __name__ == '__main__':
     insertMaster("Небукина", "Ирина", "эпиляция", False, 0, 0)
 
     insertClient(168671681, 1, 1, '13',  date(2021, 12, 2))
-
+    insertClient(168671681, 1, 1, '13', date(2021, 12, 8))
     insertCalendar(date(2021, 12, 7), 1, "0-14")
     insertCalendar(date(2021, 12, 8), 1, "0-14")
     insertCalendar(date(2021, 12, 9), 2, "0-14")

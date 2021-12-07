@@ -1,11 +1,11 @@
+from datetime import date
+
 import telebot
 import schedule
 from threading import Thread
 from time import sleep
 from keyboard import Keyboard
 import telegramcalendar as tgc
-import createDB as db
-list_of_masters=['Маникюрова', 'Топ маникюрова','Педикюрова','топ Педикюрова','РЕсницева']
 
 
 # ваш токен
@@ -14,12 +14,10 @@ TOKEN = '2102340203:AAFs-2l-3z6UoCwvi1vatLIHxuziO7Bc-Ls'  # Нурия
 bot = telebot.TeleBot(TOKEN)
 keyboard = Keyboard(bot)
 deadline_date = tgc.datetime.datetime.now()
-
+list_of_times=keyboard.list_of_times()#список времени
 list_of_procedure =  keyboard.list_of_procedures()#список процедур
-global procedure
-procedure=''
-global master
-master=''
+global need_master
+need_master=True
 @bot.message_handler(commands=['start'])
 def start_message(message):
     print(message.from_user.id)
@@ -43,9 +41,6 @@ def services(message):
 def procedures(message):
     keyboard.display_procedures(message)
 
-@bot.message_handler(func=lambda msg: msg.text == 'Записаться к мастеру', content_types=['text'])
-def all_masters(message):
-    keyboard.display_of_all_masters(message)
 
 @bot.message_handler(func=lambda msg: msg.text in list_of_procedure, content_types=['text'])
 def do_you_want_master(message):
@@ -56,18 +51,25 @@ def do_you_want_master(message):
 
 @bot.message_handler(func=lambda msg: msg.text == 'Да', content_types=['text'])
 def do_you_want_master(message):
+    global procedure
     print(procedure)
     keyboard.display_of_masters(message, procedure)
 
-@bot.message_handler(func=lambda msg: msg.text == 'Нет' or msg.text in keyboard.list_of_masters(), content_types=['text'])
+@bot.message_handler(func=lambda msg: msg.text == 'Нет' or (msg.text in keyboard.list_of_masters() and need_master==True), content_types=['text'])
 #если клиент не хочет мастера пишет "нет", иначе он выбирает мастера из списка мастер будет в keyboard.list_of_masters(),
 #если выбран мастер его нужно будет запомнить
 def calendar(message):
     now = tgc.datetime.datetime.now()  # Текущая дата
     markup = tgc.create_calendar(now.year, now.month)
-    global master
-    master = message.text  # запомним мастера к которому хочет записаться как то должно учавствовать
-    bot.send_message(message.from_user.id, "Пожалуйста, выберите дату:",
+    global need_master
+    if message.text!='Нет':
+        global master
+        master = message.text.split("  ")[0]  # запомним мастера к которому хочет записаться
+        need_master = True
+    else:
+        need_master = False
+
+    bot.send_message(message.from_user.id, "Пожалуйста, выберите дату: ",
                      reply_markup=markup)
 
 #как можно сделать: написать запрос на проверку свободного времени, если оно есть, записываем клиента и выводим сообщение что записали
@@ -77,7 +79,7 @@ def calendar(message):
 @bot.callback_query_handler(func=lambda call: tgc.separate_callback_data(call.data)[0] in
                                               ['IGNORE', 'PREV-MONTH', 'NEXT-MONTH', 'DAY'])
 def keyboard_input_text(call):
-    print(master)
+
     (action, year, month, day) = tgc.separate_callback_data(call.data)
     curr = tgc.datetime.date(int(year), int(month), 1)
     if action == "IGNORE":
@@ -90,13 +92,24 @@ def keyboard_input_text(call):
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id)
         ret_data = tgc.datetime.date(int(year), int(month), int(day))
-        # bot.send_message(message.from_user.id, "Домашнее задание на " + ret, reply_markup=markup)
         gg = ret_data.year
         mm = ret_data.month
         dd = ret_data.day
+        global procedure
         global deadline_date
-        deadline_date = ret_data
-        bot.send_message(call.message.chat.id, "Вы записались на {}.{}.{}".format(dd, mm, gg))
+        deadline_date = date(gg, mm, dd)
+        bot.edit_message_text(text=call.message.text+deadline_date.strftime('%d.%m.%y'),
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id)
+        global need_master
+        if need_master:
+            global master
+            print(master, procedure)
+            keyboard.display_time_of_master(call.message.chat.id, master, procedure,  deadline_date)
+        else:
+            print('диляра пук')
+
+            keyboard.display_time_of_all_masters(call, procedure, deadline_date)
         # Важно запомнить дату
     elif action == "PREV-MONTH":
         pre = curr - tgc.datetime.timedelta(days=1)
@@ -113,7 +126,24 @@ def keyboard_input_text(call):
     else:
         bot.answer_callback_query(callback_query_id=call.id, text="Something went wrong!")
 
-some_id=168671681
+@bot.message_handler(func=lambda msg:  msg.text in keyboard.list_of_masters() and need_master==False, content_types=['text'])
+#если клиент не хочет мастера пишет "нет", иначе он выбирает мастера из списка мастер будет в keyboard.list_of_masters(),
+#если выбран мастер его нужно будет запомнить
+def time_of_master(message):
+    global master
+    master = message.text.split("  ")[0]  # запомним мастера к которому хочет записаться
+    global procedure
+    global deadline_date
+    keyboard.display_time_of_master(message.from_user.id, master, procedure, deadline_date)
+
+@bot.message_handler(func=lambda msg: msg.text in list_of_times, content_types=['text'])
+def write_to_db(message):
+    global time
+    time=message.text
+    global deadline_date
+    print(time)
+    keyboard.insert_record(message, master, procedure,deadline_date, time)
+
 def schedule_checker():
     while True:
         schedule.run_pending()
@@ -147,13 +177,14 @@ def update_rating(call):
 if __name__ == "__main__":
     # Create the job in schedule.
 
-    schedule.every().day.at("14:20").do(reminder)
+    schedule.every().day.at("10:00").do(reminder)
+    # schedule.every().day.at("14:57").do(reminder)
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second
     # to see if the scheduled job needs to be ran.
 
     # scheduler()
-    schedule.every().day.at("15:43").do(vote)
+    schedule.every().day.at("22:00").do(vote)
     Thread(target=schedule_checker).start()
 
     # And then of course, start your server.

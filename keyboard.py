@@ -7,14 +7,14 @@ import datetime
 
 
 # conn = connect(host='localhost',
-#                            user='root',
-#                            password='87654W!',
-#                            database='dbbeautysalon')
+#                           user='root',
+#                           password='87654W!',
+#                           database='dbbeautysalon')
 # бд нурии
 conn = connect(host='localhost',
-                           user='root',
-                           database='dbbeautysalon')
-
+                          user='root',
+                         database='dbbeautysalon')
+conn = connect()
 cur = conn.cursor()
 text_start = '''
 Здравствуйте! Вас приветствует бот
@@ -51,9 +51,43 @@ def top(a):
         return "(Топ)"
     return ""
 
+def descrip(k):# переводим время
+
+    if k < 20:
+        res="1"+str(k//2)
+    else :
+        res = "2" + str((k-20) // 2)
+    if k%2==0:
+        res+=":00"
+    else:
+        res += ":30"
+    return res
+
+
+def shed(s, count):
+    #время процедурв еще надо - count
+    ar=[]
+    sr = s.split(",")#делим по промежуткам
+    for i in sr:
+        # если в i нет -
+        if i.find("-") != -1:
+            k = i.split("-")
+            begin = int(k[0])
+            end = int(k[1])
+            for j in range(begin,end-count+1):# вычитаем время, которе займет процедура
+                ar.append(descrip(j))
+
+    return ar
+
+
+
+
 class Keyboard:
     def __init__(self, bot):
         self.bot = bot
+
+    def list_of_times(self):
+        return shed("0-24", 1)
 
     def list_of_procedures(self):
         list=[]
@@ -214,7 +248,7 @@ class Keyboard:
 
     def reminder_to_vote_dict(self):  # напоминание оценить мастера
         dict_of_answ={}
-        q = "SELECT idUser, idMaster, lastname, name FROM record join master on(idMaster=id)  WHERE  date = CURRENT_DATE();"
+        q = "SELECT idUser, idMaster, lastname, name FROM record join master on(idMaster=id)  WHERE  idDay = CURRENT_DATE();"
         executeQuery(q)
         result = cur.fetchall()
         for row in result:
@@ -224,12 +258,128 @@ class Keyboard:
 
     def kb_reminder(self):  # напоминание об услуге
         dict_of_answ={}
-        q = "SELECT idUser, name, record.time FROM record join service on(idService=id) WHERE DATEDIFF(date, CURRENT_DATE()) = 1;"
+        q = "SELECT idUser, name, record.time FROM record join service on(idService=id) WHERE DATEDIFF(idDay, CURRENT_DATE()) = 1;"
         executeQuery(q)
         result = cur.fetchall()
         for row in result:
             dict_of_answ[row[0]]=[row[1],row[2]]
         for id in dict_of_answ.keys():
             print(id,dict_of_answ[id][0],dict_of_answ[id][1] )
-            self.bot.send_message(chat_id=id,text="Здравствуйте!  Напоминаем, что у вас завтра {} в {}".format(dict_of_answ[id][0],dict_of_answ[id][1]))
+            self.bot.send_message(chat_id=id,text="Здравствуйте!  Напоминаем, что у вас завтра {} в {}".format(dict_of_answ[id][0],descrip(int(dict_of_answ[id][1]))))
 
+    def display_time_of_master(self, id_of_client, master, procedure,date):#ыводим режим работы мастера в определнный день
+        markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        date = "'{}'".format(date)
+        proc = "'{}'".format(procedure)
+        fname = "'{}'".format(master.split(' ')[1]).replace('(Топ)','')
+        lname = "'{}'".format(master.split(' ')[0])
+
+        # print(date, proc, fname, lname)
+
+        # находим время процедуры
+        q = "select time from service where name=" + proc
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            print(row[0])
+            res1 = row[0]
+
+        # Находим id Мастера
+        q = "select id from master where name=" + fname + " and lastname=" + lname
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            print(row[0])
+            res2 = row[0]
+
+        # основной запрос
+        q = "Select freeTime from calendar where (SELECT DATEDIFF(idDay," + date + "))=0 and idMaster=" + str(res2)
+
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            print(row[0])
+            s = row[0]
+
+        # выводит массив свободного времени
+        ar = shed(s, res1)
+        for i in range(0,len(ar),3) :
+            if i+1 ==len(ar):
+                markup.row(ar[i])
+            elif i+2 ==len(ar):
+                markup.row(ar[i], ar[i+1] )
+            else:
+                markup.row(ar[i], ar[i+1], ar[i+2])
+
+        text_choose='Выберите время: '
+        self.bot.send_message(chat_id= id_of_client,
+                              text=text_choose,
+                              reply_markup=markup)
+
+    def display_time_of_all_masters(self,call, procedure,date):#ыводим режим работы мастера в определнный день
+        markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        date = "'{}'".format(date)
+        proc = "'{}'".format(procedure)
+
+        # print(date, proc)
+        # находим время процедуры
+        q = "select time from service where name=" + proc
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            res1 = row[0]
+
+        q = "Select idMaster from calendar where (SELECT DATEDIFF(idDay," + date + "))=0"
+        executeQuery(q)
+        result = cur.fetchall()
+        ids=[]
+        for row in result:
+            print(row[0])
+            ids.append(row[0])
+        text_all_masters_shed="В этот день работают следюущие мастера:\n"
+        for id in ids:
+            q = "Select * from master where  id ="+ str(id) +";"
+            executeQuery(q)
+            i = cur.fetchall()
+            print(i)
+            text_all_masters_shed+='{} {}{}  рейтинг: {}\n'.format(i[0][1], i[0][2], top(i[0][4]), i[0][5])
+            markup.row(('{} {}{}  рейтинг: {}'.format(i[0][1], i[0][2], top(i[0][4]), i[0][5])))
+            q = "Select freeTime from calendar where (SELECT DATEDIFF(idDay," + date + "))=0 and idMaster=" + str(id)
+            executeQuery(q)
+            result = cur.fetchall()
+            for row in result:
+                print(row[0])
+                s = row[0]
+            # выводит массив свободного времени
+            ar = shed(s, res1)
+
+            for i in ar:
+                text_all_masters_shed+=str(i)+'\n'
+
+        markup.row('Вернуться на главную')
+        self.bot.send_message(chat_id=call.message.chat.id,
+                                  text=text_all_masters_shed,
+                                  reply_markup=markup)
+
+
+    def insert_record(self,message, master, procedure,dates, time):
+        markup = telebot.types.ReplyKeyboardMarkup(True, False)
+        markup.row('Записаться на процедуру')
+        markup.row('Посмотреть услуги и цены')
+        markup.row('Посмотреть акции')
+
+        date = "'{}'".format(dates)
+        proc = "'{}'".format(procedure)
+        fname = "'{}'".format(master.split(' ')[1]).replace('(Топ)', '')#имя
+        lname = "'{}'".format(master.split(' ')[0])#Фамилия
+        print(date, proc, fname, lname)
+        timeuncode=0 #нужно раскодировать
+        #Нужен запрос на запись
+
+
+
+
+        text_about_record = "Вы записались на {} в {} на {}".format(procedure, time, dates.strftime('%d.%m.%y'))
+        self.bot.send_message(chat_id=message.from_user.id,
+                              text=text_about_record,
+                              reply_markup=markup)
