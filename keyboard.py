@@ -1,21 +1,12 @@
 import datetime
 import telebot
-from pymysql import connect
-from pymysql import connect
-# from mysql.connector import connect, Error
-import datetime
+import sqlite3
 
 
-# conn = connect(host='localhost',
-#                           user='root',
-#                           password='87654W!',
-#                           database='dbbeautysalon')
-# бд нурии
-conn = connect(host='localhost',
-                          user='root',
-                         database='dbbeautysalon')
-conn = connect()
+conn = sqlite3.connect('salon.db', check_same_thread=False)
 cur = conn.cursor()
+
+print("База данных создана и успешно подключена к SQLite")
 text_start = '''
 Здравствуйте! Вас приветствует бот
 салона красоты "Красотка".
@@ -62,6 +53,12 @@ def descrip(k):# переводим время
     else:
         res += ":30"
     return res
+
+def cript(s): # из времени в число
+    k= int(s[1])*2
+    if s[3]=='3' :
+        k+=1
+    return k
 
 
 def shed(s, count):
@@ -244,11 +241,12 @@ class Keyboard:
         newRt = (rt * count + ass) / (count + 1)
         q = "UPDATE master SET rating = %i, countClient = %i " \
             "WHERE id = %i" % (newRt, count + 1, id)
+        q = "UPDATE master SET rating = {}, countClient = {} WHERE id =  {}".format(str(newRt), str(count + 1), str(id))
         executeQuery(q)
 
     def reminder_to_vote_dict(self):  # напоминание оценить мастера
         dict_of_answ={}
-        q = "SELECT idUser, idMaster, lastname, name FROM record join master on(idMaster=id)  WHERE  idDay = CURRENT_DATE();"
+        q = "SELECT idUser, idMaster, lastname, name FROM record join master on(idMaster=id)  WHERE  strftime('%d',idDay) - strftime('%d',datetime('now')) = 0"
         executeQuery(q)
         result = cur.fetchall()
         for row in result:
@@ -258,7 +256,7 @@ class Keyboard:
 
     def kb_reminder(self):  # напоминание об услуге
         dict_of_answ={}
-        q = "SELECT idUser, name, record.time FROM record join service on(idService=id) WHERE DATEDIFF(idDay, CURRENT_DATE()) = 1;"
+        q = "SELECT idUser, name, record.time FROM record join service on (idService=id) WHERE strftime('%d',idDay) - strftime('%d',datetime('now')) = 1;"
         executeQuery(q)
         result = cur.fetchall()
         for row in result:
@@ -293,25 +291,31 @@ class Keyboard:
             res2 = row[0]
 
         # основной запрос
-        q = "Select freeTime from calendar where (SELECT DATEDIFF(idDay," + date + "))=0 and idMaster=" + str(res2)
+        q = "Select freeTime from calendar where (SELECT strftime('%s',idDay) - strftime('%s',  +" +date + "))=0 and idMaster=" + str(res2)
 
         executeQuery(q)
         result = cur.fetchall()
-        for row in result:
-            print(row[0])
-            s = row[0]
 
-        # выводит массив свободного времени
-        ar = shed(s, res1)
-        for i in range(0,len(ar),3) :
-            if i+1 ==len(ar):
-                markup.row(ar[i])
-            elif i+2 ==len(ar):
-                markup.row(ar[i], ar[i+1] )
-            else:
-                markup.row(ar[i], ar[i+1], ar[i+2])
+        if result == []:# если мастер в этот день не работает
+            text_choose = 'К сожалению, мастер в этот день '+date+' не работает'
 
-        text_choose='Выберите время: '
+        else:
+            for row in result:
+                print(row[0])
+                s = row[0]
+
+            # выводит массив свободного времени
+            ar = shed(s, res1)
+            for i in range(0, len(ar), 3):
+                if i + 1 == len(ar):
+                    markup.row(ar[i])
+                elif i + 2 == len(ar):
+                    markup.row(ar[i], ar[i + 1])
+                else:
+                    markup.row(ar[i], ar[i + 1], ar[i + 2])
+
+            text_choose = 'Выберите время: '
+
         self.bot.send_message(chat_id= id_of_client,
                               text=text_choose,
                               reply_markup=markup)
@@ -329,32 +333,50 @@ class Keyboard:
         for row in result:
             res1 = row[0]
 
-        q = "Select idMaster from calendar where (SELECT DATEDIFF(idDay," + date + "))=0"
+        # Находим id Мастеров
+        q = "select id from master where service like '%"+procedure+"%';"
+        res2 ="("
         executeQuery(q)
         result = cur.fetchall()
-        ids=[]
         for row in result:
-            print(row[0])
-            ids.append(row[0])
-        text_all_masters_shed="В этот день работают следюущие мастера:\n"
-        for id in ids:
-            q = "Select * from master where  id ="+ str(id) +";"
-            executeQuery(q)
-            i = cur.fetchall()
-            print(i)
-            text_all_masters_shed+='{} {}{}  рейтинг: {}\n'.format(i[0][1], i[0][2], top(i[0][4]), i[0][5])
-            markup.row(('{} {}{}  рейтинг: {}'.format(i[0][1], i[0][2], top(i[0][4]), i[0][5])))
-            q = "Select freeTime from calendar where (SELECT DATEDIFF(idDay," + date + "))=0 and idMaster=" + str(id)
-            executeQuery(q)
-            result = cur.fetchall()
+            res2 += str(row[0])+","
+        res2 = res2[:-1] +')'
+        print("res2", res2)
+
+        q = "Select idMaster from calendar where (SELECT strftime('%s',idDay) - strftime('%s',  +" +date + "))=0 and idMaster in "+res2 +";"
+        executeQuery(q)
+        result = cur.fetchall()
+
+        if result == []:# если мастера в этот день не работает
+            text_all_masters_shed = 'К сожалению, выбранные мастера в этот день '+date+' не работают'
+
+        else:
+            ids = []
             for row in result:
                 print(row[0])
-                s = row[0]
-            # выводит массив свободного времени
-            ar = shed(s, res1)
+                ids.append(row[0])
+            text_all_masters_shed = "В этот день работают следюущие мастера:\n"
+            for id in ids:
+                q = "Select * from master where  id =" + str(id) + ";"
+                executeQuery(q)
+                i = cur.fetchall()
+                print(i)
+                text_all_masters_shed += '{} {}{}  рейтинг: {}\n'.format(i[0][1], i[0][2], top(i[0][4]), i[0][5])
+                markup.row(('{} {}{}  рейтинг: {}'.format(i[0][1], i[0][2], top(i[0][4]), i[0][5])))
+                q = "Select freeTime from calendar where (SELECT strftime('%s',idDay) - strftime('%s',  +" + date + "))=0 and idMaster=" + str(
+                    id)
+                executeQuery(q)
+                result = cur.fetchall()
+                for row in result:
+                    print(row[0])
+                    s = row[0]
+                # выводит массив свободного времени
+                ar = shed(s, res1)
 
-            for i in ar:
-                text_all_masters_shed+=str(i)+'\n'
+                for i in ar:
+                    text_all_masters_shed += str(i) + '\n'
+
+
 
         markup.row('Вернуться на главную')
         self.bot.send_message(chat_id=call.message.chat.id,
@@ -373,11 +395,71 @@ class Keyboard:
         fname = "'{}'".format(master.split(' ')[1]).replace('(Топ)', '')#имя
         lname = "'{}'".format(master.split(' ')[0])#Фамилия
         print(date, proc, fname, lname)
-        timeuncode=0 #нужно раскодировать
+        timeuncode= cript(time) #нужно раскодировать
         #Нужен запрос на запись
+        # находим время процедуры
+        q = "select id, time from service where name= '" + procedure+"'"
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            print(row[0])
+            res1 = row[1]
+            idproc =row[0]
 
+        # Находим id Мастера
+        q = "select id from master where name=" + fname + " and lastname=" + lname
+        executeQuery(q)
+        result = cur.fetchall()
+        for row in result:
+            print(row[0])
+            res2 = row[0]
 
+        # основной запрос
+        q = "Select freeTime from calendar where (SELECT strftime('%s',idDay) - strftime('%s',  +" + date + "))=0 and idMaster=" + str(res2)
 
+        executeQuery(q)
+        result = cur.fetchall()
+
+        for row in result:
+            print(row[0])
+            s = row[0]
+
+        res3 =""
+        sr = s.split(",")  # делим по промежуткам
+        for i in sr:
+            # если в i нет -
+            if (i != "") and (i.find("-") != -1):
+                k = i.split("-")
+                print("k ", k)
+                begin = int(k[0])
+                end = int(k[1])
+
+                if res1 < (end - begin + 1):  # если процедура не занимает все свободное время или хватит вообще времени
+                    if begin <= timeuncode < end:
+                        if begin == timeuncode:
+                            res3 += str(timeuncode) + '-' + k[1] + ','
+                        elif timeuncode == end - res1 + 1:
+                            res3 += k[0] + '-' + str(timeuncode) + ','
+                        else:  # если выбрал время в середине
+                            res3 += k[0] + '-' + str(timeuncode) + ',' + str((timeuncode + res1)) + '-' + k[1] + ','
+                    else:  # если выбранное время не попадает в наш промежуток, записываем его без изменений
+                        res3 += i + ','
+
+            elif (i != "") and (i.find("-") == -1):# если одно чило без -
+                res3+=i+','
+
+            #168671681,1,1,'15','2021-12-07 00:00:00'      idUser, idMaster, idService, time,idDay
+
+        print(dates)
+        datet =str(dates)+" 00:00:00'"
+        print(datet)
+
+        q = "INSERT into record VALUES ("+ str(message.from_user.id)+","+str(res2)+"," + str(idproc) +",'"+str(timeuncode)+"','"+ datet+");"
+        print(q)
+        executeQuery(q)
+
+        q = "UPDATE calendar SET freeTime='" + res3 + "' WHERE idMaster=" + str(res2) + " and idDay='" + datet
+        executeQuery(q)
 
         text_about_record = "Вы записались на {} в {} на {}".format(procedure, time, dates.strftime('%d.%m.%y'))
         self.bot.send_message(chat_id=message.from_user.id,

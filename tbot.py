@@ -107,8 +107,6 @@ def keyboard_input_text(call):
             print(master, procedure)
             keyboard.display_time_of_master(call.message.chat.id, master, procedure,  deadline_date)
         else:
-            print('диляра пук')
-
             keyboard.display_time_of_all_masters(call, procedure, deadline_date)
         # Важно запомнить дату
     elif action == "PREV-MONTH":
@@ -141,7 +139,6 @@ def write_to_db(message):
     global time
     time=message.text
     global deadline_date
-    print(time)
     keyboard.insert_record(message, master, procedure,deadline_date, time)
 
 def schedule_checker():
@@ -178,7 +175,6 @@ if __name__ == "__main__":
     # Create the job in schedule.
 
     schedule.every().day.at("10:00").do(reminder)
-    # schedule.every().day.at("14:57").do(reminder)
     # Spin up a thread to run the schedule check so it doesn't block your bot.
     # This will take the function schedule_checker which will check every second
     # to see if the scheduled job needs to be ran.
